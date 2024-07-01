@@ -97,3 +97,8 @@ button.special:active {
 button.zero {
   grid-column: span 2;
 }
+
+.email {
+  background-color: #007bff; /* Blue background */
+  color: white; /* White text */
+}

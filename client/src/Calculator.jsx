@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './Calculator.css';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+
 
 function Calculator() {
   const navigate = useNavigate();
@@ -11,15 +11,13 @@ function Calculator() {
   useEffect(() => {
     axios.get('http://localhost:3000/auth/verify')
       .then(res => {
-        if (!res.data.status) {
-          navigate('/calculator');
+        if (res.data.status) {
+          localStorage.setItem('email', response.data.email); 
+        }else {
+          navigate('/home')
         }
       })
-      .catch(err => {
-        console.error(err);
-        navigate('/login');
-      });
-  }, [navigate]);
+  }, []);
 
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
@@ -61,16 +59,27 @@ function Calculator() {
       setResult('Error');
     }
   };
+ 
 
-  const handleLogout = () => {
-    axios.post('http://localhost:3000/auth/logout')
-      .then(() => {
-        navigate('/home');
-      })
-      .catch(err => {
-        console.error(err);
-      });
+  
+  const sendEmail = async () => {
+    try {
+      const email = localStorage.getItem('userEmail'); 
+      if (!email) {
+        alert('User email not found');
+        return;
+      }
+  
+      const response = await axios.post('http://localhost:3000/auth/send-calculation', { email, result });
+      console.log('Email sent successfully:', response.data);
+  
+      alert('Email sent successfully');
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Failed to send email');
+    }
   };
+  
 
   return (
     <div className="App">
@@ -101,6 +110,7 @@ function Calculator() {
           <button onClick={() => handleClick('.')}>.</button>
           <button onClick={() => handleClick('Math.sqrt(')}>√</button>
           <button onClick={calculateResult}>=</button>
+          <button className="email" onClick={sendEmail}>Send to email</button>
         </div>
       </div>
     </div>

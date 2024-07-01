@@ -5,6 +5,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer')
 const crypto = require('crypto');
+const checkAdmin = require('../models/middleware ');
 
 // router.post('/signup', async (req, res) => { 
 //     try {
@@ -67,7 +68,7 @@ router.post('/signup', async (req, res) => {
                 return res.status(500).json({ message: "Error sending verification email" });
             } else {
                 console.log('Email sent: ' + info.response);
-                return res.status(201).json({ status: true, message: "User registered. Please check your email for the verification code." });
+                return res.status(201).json({ status: true, message: " Please check your email for the verification code." });
             }
         });
 
@@ -195,5 +196,70 @@ router.get('/logout', (req, res) => {
     res.clearCookie('token')
     return res.json({status: true})
 })
+
+router.post('/send-calculation', async (req, res) => {
+    const { email, result } = req.body;
+
+    const mailOptions = {
+        from: 'devaganeshvar@gmail.com',
+        to: email,
+        subject: 'Calculator Result',
+        text: `The result of your calculation is: ${result}`
+    };
+
+    transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+            console.error("Error sending email: ", error);
+            return res.status(500).json({ message: "Error sending email" });
+        } else {
+            console.log('Email sent: ' + info.response);
+            return res.status(200).json({ status: true, message: "Email sent successfully" });
+        }
+    });
+});
+
+
+router.post('/adminlogin', async (req, res) => {
+    const { email, password } = req.body;
+    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+        const token = jwt.sign({ email }, process.env.KEY, { expiresIn: '1h' });
+        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
+        return res.json({ status: true, message: 'Login successful' });
+    } else {
+        return res.json({ status: false, message: 'Invalid credentials' });
+    }
+});
+
+router.get('usersData', checkAdmin, async (req, res) => {
+   try{
+    const allUser = await User.find();
+    res.send({ status: "ok", data: allUser});
+   }catch(error){
+    console.log(error);
+   }
+});
+
+
+router.post('/users', checkAdmin, async (req, res) => {
+    const { username, email, password, isAdmin } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ username, email, password: hashedPassword, isAdmin });
+    await newUser.save();
+    res.json({ message: 'User added successfully' });
+});
+
+
+router.put('/users/:id', checkAdmin, async (req, res) => {
+    const { username, email, isAdmin } = req.body;
+    await User.findByIdAndUpdate(req.params.id, { username, email, isAdmin });
+    res.json({ message: 'User updated successfully' });
+});
+
+
+router.delete('/users/:id', checkAdmin, async (req, res) => {
+    await User.findByIdAndDelete(req.params.id);
+    res.json({ message: 'User deleted successfully' });
+});
 
 module.exports = router;
