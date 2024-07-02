@@ -4,7 +4,7 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "predeploy" : "npm run build",
+    "predeploy" : "npm run build && echo > dist/.nojekyll",
     "deploy" : "gh-pages -d dist",
     "dev": "vite",
     "build": "vite build",
@@ -30,4 +30,3 @@
     "vite": "^5.3.1"
   }
 }
- 
